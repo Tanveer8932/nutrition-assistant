@@ -158,7 +158,9 @@ export class App {
   private scrollToEnd(): void {
     queueMicrotask(() => {
       const el = this.scroller()?.nativeElement;
-      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      if (!el) return;
+      const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      el.scrollTo({ top: el.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
     });
   }
 
