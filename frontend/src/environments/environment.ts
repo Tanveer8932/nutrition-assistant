@@ -6,5 +6,5 @@
  * directly; the backend must allow this site's origin in CORS_ORIGINS.
  */
 export const environment = {
-  apiBaseUrl: 'https://nutrition-assistant-api.onrender.com',
+  apiBaseUrl: 'https://nutrition-assistant-api-2bys.onrender.com',
 };
