@@ -6,15 +6,17 @@ Milestone 2 adds retrieval under the same interface, endpoints, and schema.
 
 ```
 frontend/   Angular 22 chat UI: message list, input, sources panel (empty until M2)
-backend/    FastAPI: /api/chat, SQLite storage, Claude call, scope guard
+backend/    FastAPI: /api/chat, SQLite storage, model call (OpenAI, Groq, or Anthropic), scope guard
 eval/       Fixed question set + runner that writes a raw report per run
 FAILURE_LOG.md   Grouped, counted failures from the eval run
 ```
 
 ## Response contract
 
-The model returns structured output (Claude structured outputs, `output_config.format` with a
-JSON schema). The backend then validates it with Pydantic, strictly:
+The model returns structured output, using the same JSON schema for every provider: `response_format`
+with `strict: true` for OpenAI (default) and Groq (`LLM_PROVIDER=groq`, model `openai/gpt-oss-20b`), or
+Anthropic `output_config.format` for `LLM_PROVIDER=anthropic`. The backend then
+validates it with Pydantic, strictly:
 
 ```json
 {
@@ -32,7 +34,7 @@ JSON schema). The backend then validates it with Pydantic, strictly:
 
 ```json
 { "conversation_id": "...", "message_id": 12, "response": { "answer": "...", "claims": [] },
-  "declined": false, "decline_category": null, "guard_stage": null, "model": "claude-opus-5" }
+  "declined": false, "decline_category": null, "guard_stage": null, "model": "gpt-5-nano-2025-08-07" }
 ```
 
 Other endpoints: `GET /api/conversations/{id}`, `GET /api/claims/unsupported` (every claim with
@@ -63,7 +65,7 @@ Backend (Python 3.12):
 cd backend
 python -m venv .venv && .venv/Scripts/activate      # or: source .venv/bin/activate
 pip install -r requirements-dev.txt
-export ANTHROPIC_API_KEY=sk-ant-...
+cp .env.example .env               # set LLM_PROVIDER and that provider's key; loaded automatically at startup
 uvicorn app.main:app --reload --port 8000
 pytest -q
 ```
@@ -80,7 +82,12 @@ npm start          # http://localhost:4200, /api is proxied to :8000
 
 **Backend → Railway**
 1. New project → Deploy from GitHub repo → set **Root Directory** to `backend`.
-2. Variables: `ANTHROPIC_API_KEY`. Optional: `ANTHROPIC_MODEL`, `ANTHROPIC_EFFORT`.
+2. Variables: `OPENAI_API_KEY`. Optional: `OPENAI_MODEL` (default: the pinned snapshot `gpt-5-nano-2025-08-07`),
+   `OPENAI_REASONING_EFFORT`. For Groq, set `LLM_PROVIDER=groq` and `GROQ_API_KEY`. For Claude, set
+   `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY`.
+   Note: the brief lists Anthropic or OpenAI as the model providers. Groq was added at the project
+   owner's request for the Milestone 1 evaluation run.
+   There's no automatic model fallback, so every answer comes from the configured model.
 3. SQLite is lost on each redeploy unless you add a Volume (mount at `/data`) and set
    `DB_PATH=/data/nutrition.db`.
 4. Generate a public domain. Check `https://<backend>/api/health`.

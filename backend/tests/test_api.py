@@ -96,3 +96,14 @@ def test_schema_failure_is_an_error(client, monkeypatch):
     monkeypatch.setattr(llm, "ask", bad)
     r = client.post("/api/chat", json={"message": "How long do eggs keep?"})
     assert r.status_code == 502
+
+
+def test_missing_provider_key_is_clean_503(client, monkeypatch):
+    def not_configured(_):
+        raise llm.ProviderNotConfigured("GROQ_API_KEY is not set for LLM_PROVIDER=groq")
+
+    monkeypatch.setattr(llm, "ask", not_configured)
+    r = client.post("/api/chat", json={"message": "How long do eggs keep?"})
+    assert r.status_code == 503
+    assert r.json()["detail"] == "The model provider is not configured on the server."
+    assert "GROQ_API_KEY" not in r.text

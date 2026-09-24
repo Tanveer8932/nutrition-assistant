@@ -3,7 +3,6 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-import anthropic
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -17,12 +16,15 @@ from .schemas import (
     StoredMessage,
 )
 
-log = logging.getLogger("nutrition")
+log = logging.getLogger("uvicorn.error").getChild("nutrition")
 
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     db.init_db()
+    log.info("provider=%s model=%s %s configured=%s", llm.PROVIDER, llm.MODEL, llm.key_env(), llm.key_configured())
+    if not llm.key_configured():
+        log.warning("%s is not set: /api/chat will return 503 until it is (set it in backend/.env)", llm.key_env())
     yield
 
 
@@ -59,7 +61,13 @@ def _decline(category: str) -> AssistantResponse:
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "model": llm.MODEL, "prompt_version": PROMPT_VERSION}
+    return {
+        "status": "ok",
+        "provider": llm.PROVIDER,
+        "model": llm.MODEL,
+        "api_key_configured": llm.key_configured(),
+        "prompt_version": PROMPT_VERSION,
+    }
 
 
 @app.post("/api/chat", response_model=ChatResponse)
@@ -82,14 +90,17 @@ def chat(req: ChatRequest) -> ChatResponse:
         except llm.SchemaError as e:
             log.error("schema failure: %s | raw=%r", e, e.raw)
             raise HTTPException(status_code=502, detail="The model returned a response that did not match the schema.")
+        except llm.ProviderNotConfigured as e:
+            log.error("model provider not configured: %s", e)
+            raise HTTPException(status_code=503, detail="The model provider is not configured on the server.")
         except llm.ModelRefusal:
             raise HTTPException(status_code=422, detail="The model declined to answer this request.")
-        except anthropic.RateLimitError:
+        except llm.RateLimitErrors:
             raise HTTPException(status_code=429, detail="Rate limited by the model provider. Try again shortly.")
-        except anthropic.APIStatusError as e:
-            log.error("anthropic status error: %s", e)
+        except llm.StatusErrors as e:
+            log.error("model provider status error: %s", e)
             raise HTTPException(status_code=502, detail="Model provider error.")
-        except anthropic.APIConnectionError:
+        except llm.ConnectionErrors:
             raise HTTPException(status_code=503, detail="Could not reach the model provider.")
 
         raw, model, response = result.raw, result.model, result.response

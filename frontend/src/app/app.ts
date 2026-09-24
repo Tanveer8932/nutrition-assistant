@@ -40,12 +40,15 @@ function writeStoredId(id: string | null): void {
 export class App {
   private chat = inject(ChatService);
   private scroller = viewChild<ElementRef<HTMLElement>>('scroller');
+  private composer = viewChild<ElementRef<HTMLTextAreaElement>>('composer');
 
   protected readonly messages = signal<UiMessage[]>([]);
   protected readonly draft = signal('');
   protected readonly sending = signal(false);
   protected readonly conversationId = signal<string | null>(readStoredId());
   protected readonly selectedId = signal<number | null>(null);
+  /** Mobile only: whether the sources sheet is open. */
+  protected readonly panelOpen = signal(false);
 
   /** Assistant message whose claims/sources the side panel shows. */
   protected readonly selected = computed(() => {
@@ -58,16 +61,16 @@ export class App {
   );
 
   protected readonly suggestions = [
-    'How much protein does a vegetarian adult need?',
-    'How long can cooked rice stay in the fridge?',
-    'Does steaming keep more vitamins than boiling?',
+    { label: 'Nutrients', text: 'How much protein does a vegetarian adult need?' },
+    { label: 'Food safety', text: 'How long can cooked rice stay in the fridge?' },
+    { label: 'Cooking', text: 'Does steaming keep more vitamins than boiling?' },
   ];
 
   constructor() {
     const id = this.conversationId();
     if (id) {
       this.chat.load(id).subscribe({
-        next: (conv) =>
+        next: (conv) => {
           this.messages.set(
             conv.messages.map((m) => ({
               id: m.id,
@@ -76,7 +79,9 @@ export class App {
               claims: m.response?.claims ?? [],
               declined: m.declined,
             })),
-          ),
+          );
+          this.scrollToEnd();
+        },
         error: () => this.newConversation(),
       });
     }
@@ -86,6 +91,7 @@ export class App {
     const message = text.trim();
     if (!message || this.sending()) return;
     this.draft.set('');
+    this.resizeComposer();
     this.sending.set(true);
     this.push({ id: -Date.now(), role: 'user', text: message, claims: [], declined: false });
 
@@ -102,20 +108,37 @@ export class App {
         });
         this.selectedId.set(res.message_id);
         this.sending.set(false);
+        this.focusComposer();
       },
       error: (err: HttpErrorResponse) => {
-        const detail = typeof err.error?.detail === 'string' ? err.error.detail : 'Something went wrong.';
+        const detail =
+          typeof err.error?.detail === 'string'
+            ? err.error.detail
+            : err.status === 0
+              ? 'Could not reach the server. Check your connection and try again.'
+              : 'Something went wrong. Please try again.';
         this.push({ id: -Date.now(), role: 'assistant', text: detail, claims: [], declined: false, error: true });
         this.sending.set(false);
+        this.focusComposer();
       },
     });
   }
 
   protected onKeydown(event: KeyboardEvent): void {
-    if (event.key === 'Enter' && !event.shiftKey) {
+    if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
       event.preventDefault();
       this.send();
     }
+  }
+
+  protected onDraftChange(value: string): void {
+    this.draft.set(value);
+    this.resizeComposer();
+  }
+
+  protected selectMessage(id: number, openPanel = false): void {
+    this.selectedId.set(id);
+    if (openPanel) this.panelOpen.set(true);
   }
 
   protected newConversation(): void {
@@ -123,13 +146,33 @@ export class App {
     writeStoredId(null);
     this.messages.set([]);
     this.selectedId.set(null);
+    this.panelOpen.set(false);
+    this.focusComposer();
   }
 
   private push(msg: UiMessage): void {
     this.messages.update((list) => [...list, msg]);
+    this.scrollToEnd();
+  }
+
+  private scrollToEnd(): void {
     queueMicrotask(() => {
       const el = this.scroller()?.nativeElement;
-      if (el) el.scrollTop = el.scrollHeight;
+      if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    });
+  }
+
+  private focusComposer(): void {
+    queueMicrotask(() => this.composer()?.nativeElement.focus());
+  }
+
+  /** Grow the textarea with its content, up to the CSS max-height. */
+  private resizeComposer(): void {
+    queueMicrotask(() => {
+      const el = this.composer()?.nativeElement;
+      if (!el) return;
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
     });
   }
 }
