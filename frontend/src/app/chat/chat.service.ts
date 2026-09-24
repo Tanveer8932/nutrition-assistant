@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
+import { environment } from '../../environments/environment';
 
 /** Mirrors backend/app/schemas.py. `source` is always null in Milestone 1. */
 export interface Claim {
@@ -41,12 +42,14 @@ export interface Conversation {
 @Injectable({ providedIn: 'root' })
 export class ChatService {
   private http = inject(HttpClient);
+  /** '' in development (dev-server proxy), the backend's origin in production. */
+  private api = `${environment.apiBaseUrl}/api`;
 
   send(message: string, conversationId: string | null): Observable<ChatResponse> {
-    return this.http.post<ChatResponse>('/api/chat', { message, conversation_id: conversationId });
+    return this.http.post<ChatResponse>(`${this.api}/chat`, { message, conversation_id: conversationId });
   }
 
   load(conversationId: string): Observable<Conversation> {
-    return this.http.get<Conversation>(`/api/conversations/${conversationId}`);
+    return this.http.get<Conversation>(`${this.api}/conversations/${conversationId}`);
   }
 }
