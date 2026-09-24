@@ -1,0 +1,100 @@
+<div class="shell">
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark" aria-hidden="true">●</span>
+      <h1>Nutrition Assistant</h1>
+      <span class="badge">prototype · unsourced</span>
+    </div>
+    <button type="button" class="ghost" (click)="newConversation()">New chat</button>
+  </header>
+
+  <main class="layout">
+    <section class="chat" aria-label="Conversation">
+      <div class="messages" #scroller>
+        @if (messages().length === 0) {
+          <div class="empty">
+            <p class="lead">Ask about food, nutrients, food safety, or cooking.</p>
+            <p class="muted">
+              Answers come from the model's memory with no sources behind them. Treat numbers as unverified.
+              Personal calorie or weight targets and medical questions are declined.
+            </p>
+            <div class="chips">
+              @for (s of suggestions; track s) {
+                <button type="button" class="chip" (click)="send(s)">{{ s }}</button>
+              }
+            </div>
+          </div>
+        }
+
+        @for (m of messages(); track m.id) {
+          <article
+            class="msg"
+            [class.user]="m.role === 'user'"
+            [class.assistant]="m.role === 'assistant'"
+            [class.declined]="m.declined"
+            [class.error]="m.error"
+            [class.selected]="m.role === 'assistant' && selected()?.id === m.id"
+            (click)="m.role === 'assistant' && !m.error && selectedId.set(m.id)"
+          >
+            @if (m.declined) {
+              <span class="tag">Out of scope</span>
+            }
+            <p>{{ m.text }}</p>
+            @if (m.role === 'assistant' && m.claims.length) {
+              <span class="meta">{{ m.claims.length }} claim{{ m.claims.length === 1 ? '' : 's' }} · 0 sourced</span>
+            }
+          </article>
+        }
+
+        @if (sending()) {
+          <article class="msg assistant pending" aria-live="polite"><p>Thinking…</p></article>
+        }
+      </div>
+
+      <form class="composer" (submit)="$event.preventDefault(); send()">
+        <textarea
+          rows="2"
+          placeholder="Ask a food, nutrition, or food-safety question…"
+          [ngModel]="draft()"
+          (ngModelChange)="draft.set($event)"
+          name="draft"
+          (keydown)="onKeydown($event)"
+          [disabled]="sending()"
+          aria-label="Message"
+        ></textarea>
+        <button type="submit" [disabled]="sending() || !draft().trim()">Send</button>
+      </form>
+    </section>
+
+    <aside class="sources" aria-label="Sources">
+      <h2>Sources</h2>
+      @if (sources().length) {
+        <ol>
+          @for (c of sources(); track $index) {
+            <li><a [href]="c.source" target="_blank" rel="noopener">{{ c.source }}</a></li>
+          }
+        </ol>
+      } @else {
+        <p class="muted small">No sources. The retrieval layer arrives in Milestone 2.</p>
+      }
+
+      <h3>Claims in this answer</h3>
+      @if (selected(); as sel) {
+        @if (sel.claims.length) {
+          <ul class="claims">
+            @for (c of sel.claims; track $index) {
+              <li>
+                <span>{{ c.text }}</span>
+                <code class="null">source: null</code>
+              </li>
+            }
+          </ul>
+        } @else {
+          <p class="muted small">No factual claims in this answer.</p>
+        }
+      } @else {
+        <p class="muted small">Claims from the selected answer appear here.</p>
+      }
+    </aside>
+  </main>
+</div>

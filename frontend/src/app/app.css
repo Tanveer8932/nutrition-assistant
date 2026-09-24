@@ -1,0 +1,274 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand h1 {
+  font-size: 1.05rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.mark {
+  color: var(--accent);
+}
+
+.badge {
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--warn-bg);
+  color: var(--warn-fg);
+}
+
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  min-height: 0;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.empty {
+  max-width: 560px;
+  margin: 8vh auto 0;
+  text-align: center;
+}
+
+.lead {
+  font-size: 1.15rem;
+  margin: 0 0 8px;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 16px;
+}
+
+.chip {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+}
+
+.msg {
+  max-width: min(680px, 85%);
+  padding: 10px 14px;
+  border-radius: 14px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.msg p {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.msg.user {
+  align-self: flex-end;
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.msg.assistant {
+  align-self: flex-start;
+  background: var(--surface);
+  border-color: var(--border);
+  cursor: pointer;
+}
+
+.msg.assistant.selected {
+  border-color: var(--accent);
+}
+
+.msg.declined {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+
+.msg.error {
+  background: var(--err-bg);
+  border-color: var(--err-border);
+  cursor: default;
+}
+
+.msg.pending {
+  color: var(--muted);
+  cursor: default;
+}
+
+.tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--warn-fg);
+  margin-bottom: 4px;
+}
+
+.meta {
+  display: block;
+  margin-top: 6px;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.composer {
+  display: flex;
+  gap: 8px;
+  padding: 12px 20px 16px;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.composer textarea {
+  flex: 1;
+  resize: none;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+button[type='submit'] {
+  padding: 0 18px;
+  border-radius: 10px;
+  border: none;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.ghost {
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.sources {
+  border-left: 1px solid var(--border);
+  background: var(--surface);
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.sources h2 {
+  font-size: 0.95rem;
+  margin: 0 0 8px;
+}
+
+.sources h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  margin: 24px 0 8px;
+}
+
+.claims {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.claims li {
+  font-size: 0.85rem;
+  padding: 8px 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.null {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small {
+  font-size: 0.85rem;
+}
+
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(0, 1fr) auto;
+  }
+
+  .sources {
+    border-left: none;
+    border-top: 1px solid var(--border);
+    max-height: 30dvh;
+  }
+
+  .messages,
+  .composer,
+  .topbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
